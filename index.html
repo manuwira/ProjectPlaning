@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ressourcen- &amp; Planungstool</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Ressourcen- &amp; Planungstool</h1>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="week">Wochenplanung</button>
+    <button class="tab-btn" data-tab="gantt">Meilensteinplanung</button>
+    <button class="tab-btn" data-tab="tasks">Projektaufgaben</button>
+  </nav>
+  <div class="topbar-actions">
+    <button id="btn-manage" class="btn-secondary">Verwalten</button>
+    <button id="btn-export" class="btn-secondary">Export</button>
+    <button id="btn-import" class="btn-secondary">Import</button>
+    <input type="file" id="import-file" accept="application/json" hidden>
+  </div>
+</header>
+
+<!-- ===================== WOCHENPLANUNG ===================== -->
+<section id="tab-week" class="tab-panel active">
+  <div class="week-toolbar">
+    <button id="week-prev" class="btn-icon" title="Vorherige Wochen">&#8593;</button>
+    <button id="week-today" class="btn-secondary">Heute</button>
+    <button id="week-next" class="btn-icon" title="Nächste Wochen">&#8595;</button>
+    <div id="week-label" class="week-label"></div>
+    <button id="btn-add-employee" class="btn-primary">+ Mitarbeiter</button>
+  </div>
+
+  <div class="legend" id="week-legend"></div>
+
+  <div class="table-scroll week-scroll">
+    <table id="week-table" class="week-table"></table>
+  </div>
+</section>
+
+<!-- ===================== MEILENSTEINPLANUNG ===================== -->
+<section id="tab-gantt" class="tab-panel">
+  <div class="gantt-toolbar">
+    <button id="gantt-prev" class="btn-icon" title="Zurück">&#8592;</button>
+    <button id="gantt-today" class="btn-secondary">Heute</button>
+    <button id="gantt-next" class="btn-icon" title="Weiter">&#8594;</button>
+    <div id="gantt-label" class="week-label"></div>
+    <select id="gantt-zoom">
+      <option value="week">Wochenansicht</option>
+      <option value="month">Monatsansicht</option>
+    </select>
+    <button id="btn-add-project" class="btn-primary">+ Projekt</button>
+  </div>
+
+  <div class="legend" id="gantt-legend"></div>
+
+  <div class="table-scroll gantt-scroll">
+    <div id="gantt-chart" class="gantt-chart"></div>
+  </div>
+</section>
+
+<!-- ===================== PROJEKTAUFGABEN ===================== -->
+<section id="tab-tasks" class="tab-panel">
+  <div class="week-toolbar">
+    <button id="btn-add-task" class="btn-primary">+ Aufgabe</button>
+    <select id="task-filter-type">
+      <option value="">Alle Typen</option>
+      <option value="service">Service</option>
+      <option value="projekt">Projekt</option>
+      <option value="intern">Intern</option>
+    </select>
+    <select id="task-filter-status">
+      <option value="">Alle Status</option>
+      <option value="geplant">Geplant</option>
+      <option value="offen">Offen</option>
+      <option value="erledigt">Erledigt</option>
+    </select>
+  </div>
+
+  <div class="table-scroll">
+    <table id="tasks-table" class="tasks-table"></table>
+  </div>
+</section>
+
+<!-- ===================== MODALS ===================== -->
+<div id="modal-backdrop" class="modal-backdrop hidden">
+
+  <div id="modal-cell" class="modal hidden">
+    <h2>Eintrag bearbeiten</h2>
+    <div class="modal-sub" id="modal-cell-sub"></div>
+    <label>Kategorie
+      <select id="cell-activity"></select>
+    </label>
+    <label>Projekt
+      <select id="cell-project"></select>
+    </label>
+    <label>Notiz
+      <textarea id="cell-note" rows="2" placeholder="optionale Notiz"></textarea>
+    </label>
+    <div class="modal-actions">
+      <button id="cell-clear" class="btn-danger">Leeren</button>
+      <div class="spacer"></div>
+      <button id="cell-cancel" class="btn-secondary">Abbrechen</button>
+      <button id="cell-save" class="btn-primary">Speichern</button>
+    </div>
+  </div>
+
+  <div id="modal-manage" class="modal modal-wide hidden">
+    <h2>Verwalten</h2>
+    <div class="manage-tabs">
+      <button class="manage-tab-btn active" data-mtab="employees">Mitarbeiter</button>
+      <button class="manage-tab-btn" data-mtab="projects">Projekte</button>
+      <button class="manage-tab-btn" data-mtab="activities">Kategorien</button>
+      <button class="manage-tab-btn" data-mtab="phases">Phasen (Gantt)</button>
+    </div>
+
+    <div id="manage-employees" class="manage-panel active">
+      <div id="manage-employees-list" class="manage-list"></div>
+      <div class="manage-add-row">
+        <input type="text" id="new-employee-name" placeholder="Name">
+        <input type="text" id="new-employee-team" placeholder="Team (optional, z.B. WICK)">
+        <button id="add-employee-btn" class="btn-primary">Hinzufügen</button>
+      </div>
+    </div>
+
+    <div id="manage-projects" class="manage-panel">
+      <div id="manage-projects-list" class="manage-list"></div>
+      <div class="manage-add-row">
+        <input type="text" id="new-project-number" placeholder="Nr. (optional)">
+        <input type="text" id="new-project-name" placeholder="Projektname">
+        <input type="color" id="new-project-color" value="#4a90d9">
+        <button id="add-project-btn" class="btn-primary">Hinzufügen</button>
+      </div>
+    </div>
+
+    <div id="manage-activities" class="manage-panel">
+      <div id="manage-activities-list" class="manage-list"></div>
+      <div class="manage-add-row">
+        <input type="text" id="new-activity-name" placeholder="Bezeichnung">
+        <input type="color" id="new-activity-color" value="#cccccc">
+        <button id="add-activity-btn" class="btn-primary">Hinzufügen</button>
+      </div>
+    </div>
+
+    <div id="manage-phases" class="manage-panel">
+      <div id="manage-phases-list" class="manage-list"></div>
+      <div class="manage-add-row">
+        <input type="text" id="new-phase-code" placeholder="Code (z.B. PCZ)">
+        <input type="text" id="new-phase-name" placeholder="Name (optional, z.B. Konzept)">
+        <input type="color" id="new-phase-color" value="#8bc34a">
+        <button id="add-phase-btn" class="btn-primary">Hinzufügen</button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <div class="spacer"></div>
+      <button id="manage-close" class="btn-primary">Schliessen</button>
+    </div>
+  </div>
+
+  <div id="modal-prompt" class="modal hidden">
+    <h2 id="prompt-title">Eingabe</h2>
+    <div id="prompt-fields"></div>
+    <div class="modal-actions">
+      <div class="spacer"></div>
+      <button id="prompt-cancel" class="btn-secondary">Abbrechen</button>
+      <button id="prompt-ok" class="btn-primary">OK</button>
+    </div>
+  </div>
+
+  <div id="modal-confirm" class="modal hidden">
+    <h2 id="confirm-title">Bestätigen</h2>
+    <p id="confirm-message" class="modal-sub"></p>
+    <div class="modal-actions">
+      <div class="spacer"></div>
+      <button id="confirm-cancel" class="btn-secondary">Abbrechen</button>
+      <button id="confirm-ok" class="btn-danger">Löschen</button>
+    </div>
+  </div>
+
+  <div id="modal-task" class="modal hidden">
+    <h2 id="task-modal-title">Aufgabe bearbeiten</h2>
+    <label>Typ
+      <select id="task-type">
+        <option value="service">Service</option>
+        <option value="projekt">Projekt</option>
+        <option value="intern">Intern</option>
+      </select>
+    </label>
+    <label>Person
+      <input type="text" id="task-person" list="task-person-list" placeholder="Name">
+      <datalist id="task-person-list"></datalist>
+    </label>
+    <label>Kunde
+      <input type="text" id="task-customer" placeholder="Kundenname (optional)">
+    </label>
+    <label>Arbeit
+      <textarea id="task-work" rows="2" placeholder="Was ist zu tun?"></textarea>
+    </label>
+    <label>Priorität
+      <select id="task-priority">
+        <option value="kritisch">Kritisch</option>
+        <option value="normal">Normal</option>
+        <option value="erhoeht">Erhöht</option>
+      </select>
+    </label>
+    <label>Aufwand
+      <div class="inline-fields">
+        <input type="number" id="task-effort-value" min="0" step="0.5" placeholder="z.B. 2">
+        <select id="task-effort-unit">
+          <option value="tage">Tage</option>
+          <option value="stunden">Stunden</option>
+        </select>
+      </div>
+    </label>
+    <label>Datum
+      <input type="date" id="task-date">
+    </label>
+    <label>Status
+      <select id="task-status">
+        <option value="geplant">Geplant</option>
+        <option value="offen">Offen</option>
+        <option value="erledigt">Erledigt</option>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button id="task-delete" class="btn-danger">Löschen</button>
+      <div class="spacer"></div>
+      <button id="task-cancel" class="btn-secondary">Abbrechen</button>
+      <button id="task-save" class="btn-primary">Speichern</button>
+    </div>
+  </div>
+
+  <div id="modal-bar" class="modal hidden">
+    <h2 id="bar-title">Balken bearbeiten</h2>
+    <label>Projekt
+      <select id="bar-project"></select>
+    </label>
+    <label>Zeile
+      <select id="bar-row"></select>
+      <button id="bar-add-row" class="btn-secondary btn-inline">+ neue Zeile</button>
+    </label>
+    <label>Phase
+      <select id="bar-phase"></select>
+    </label>
+    <label>Mitarbeiter
+      <select id="bar-employee"></select>
+    </label>
+    <label>Von
+      <input type="date" id="bar-start">
+    </label>
+    <label>Bis
+      <input type="date" id="bar-end">
+    </label>
+    <label>Beschriftung
+      <input type="text" id="bar-label" placeholder="optional, z.B. Name/Kürzel">
+    </label>
+    <div class="modal-actions">
+      <button id="bar-delete" class="btn-danger">Löschen</button>
+      <div class="spacer"></div>
+      <button id="bar-cancel" class="btn-secondary">Abbrechen</button>
+      <button id="bar-save" class="btn-primary">Speichern</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js?v=20260904b"></script>
+</body>
+</html>
